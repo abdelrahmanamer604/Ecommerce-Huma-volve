@@ -1,11 +1,15 @@
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/dummy_data.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/theme.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/theme.dart';
 import '../../../main_navigation/screens/main_navigation_screen.dart';
 import '../../sign_up/screens/sign_up_screen.dart';
+import '../services/login_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,11 +22,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  late final LoginService _loginService;
+  bool _isLoading = false;
 
   @override
   void initState() {
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    _loginService = LoginService(ApiClient());
 
     super.initState();
   }
@@ -108,13 +115,90 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 PrimaryButton(
                   text: 'Login',
-                  onPressed: () {
+                  isLoading: _isLoading,
+                  onPressed: () async {
                     if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => MainNavigationScreen(),
-                        ),
-                      );
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      try {
+                        final loginResponse = await _loginService.login(
+                          email: emailController.text.trim(),
+                          password: passwordController.text.trim(),
+                        );
+
+                        String userName = '';
+                        try {
+                          final profile = await _loginService.getProfile(
+                            loginResponse.accessToken,
+                          );
+                          userName = profile['name']?.toString() ?? '';
+                          if (userName.isNotEmpty) {
+                            dummyUser.name = userName;
+                          }
+                          if (profile['email'] != null) {
+                            dummyUser.email = profile['email'].toString();
+                          }
+                          if (profile['avatar'] != null &&
+                              profile['avatar'].toString().isNotEmpty) {
+                            dummyUser.profilePictureUrl =
+                                profile['avatar'].toString();
+                          }
+                        } catch (_) {}
+
+                        if (!context.mounted) return;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              userName.isNotEmpty
+                                  ? 'Welcome, $userName!'
+                                  : 'Welcome!',
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const MainNavigationScreen(),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        String errorMessage = '';
+                        if (e is DioException && e.response != null) {
+                          if (e.response?.statusCode == 401) {
+                            errorMessage = 'Invalid email or password';
+                          } else if (e.response?.data is Map &&
+                              e.response!.data['message'] != null) {
+                            final msg = e.response!.data['message'];
+                            errorMessage = msg is List
+                                ? msg.join('\n')
+                                : msg.toString();
+                          }
+                        }
+                        if (errorMessage.isEmpty) {
+                          errorMessage = 'Login failed: ${e.toString()}';
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(errorMessage),
+                            backgroundColor: AppTheme.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      }
                     }
                   },
                 ),

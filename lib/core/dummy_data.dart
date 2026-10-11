@@ -89,9 +89,9 @@ final dummyCart = [
 ];
 
 class UserProfile {
-  final String name;
-  final String email;
-  final String profilePictureUrl;
+  String name;
+  String email;
+  String profilePictureUrl;
 
   UserProfile({
     required this.name,
