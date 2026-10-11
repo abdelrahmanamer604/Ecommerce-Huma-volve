@@ -7,6 +7,8 @@ class CustomTextField extends StatefulWidget {
   final String? Function(String?)? validator;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
+  final AutovalidateMode? autovalidateMode;
+  final ValueChanged<String>? onChanged;
 
   const CustomTextField({
     super.key,
@@ -16,6 +18,8 @@ class CustomTextField extends StatefulWidget {
     this.validator,
     this.controller,
     this.keyboardType,
+    this.autovalidateMode,
+    this.onChanged,
   });
 
   @override
@@ -51,10 +55,17 @@ class _CustomTextFieldState extends State<CustomTextField> {
         obscureText: _obscureText,
         validator: widget.validator,
         keyboardType: widget.keyboardType,
+        autovalidateMode: widget.autovalidateMode ?? AutovalidateMode.onUserInteraction,
+        onChanged: widget.onChanged,
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey.shade400),
           prefixIcon: Icon(widget.prefixIcon, color: Colors.grey.shade600),
+          errorMaxLines: 3,
+          errorStyle: const TextStyle(
+            fontSize: 12,
+            height: 1.2,
+          ),
           suffixIcon: widget.isPassword
               ? IconButton(
                   icon: Icon(

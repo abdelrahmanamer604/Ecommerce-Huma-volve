@@ -1,9 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/theme.dart';
 import '../../login/screens/login_screen.dart';
+import '../services/sign_up_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,12 +20,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late final TextEditingController nameController;
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  late final SignUpService _signUpService;
+  bool _isLoading = false;
 
   @override
   void initState() {
     nameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    _signUpService = SignUpService(ApiClient());
 
     super.initState();
   }
@@ -104,20 +110,101 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     if (value.length < 6) {
                       return 'Password must be at least 6 characters';
                     }
+                    if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value)) {
+                      return 'Password must contain only letters and numbers';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 40),
                 PrimaryButton(
                   text: 'Sign Up',
+                  isLoading: _isLoading,
                   onPressed: () async {
                     if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      try {
+                        final email = emailController.text.trim();
+                        final isAlreadyRegistered =
+                            await _signUpService.isEmailRegistered(email);
+                        if (isAlreadyRegistered) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'This account is already in use. Please enter another account.',
+                              ),
+                              backgroundColor: AppTheme.error,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          return;
+                        }
+
+                        await _signUpService.signUp(
+                          name: nameController.text.trim(),
+                          email: email,
+                          password: passwordController.text.trim(),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account created successfully! Please login.'),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        String errorMessage = '';
+                        if (e is DioException && e.response?.data != null) {
+                          final data = e.response!.data;
+                          if (data is Map && data['message'] != null) {
+                            final msg = data['message'];
+                            if (msg is List) {
+                              errorMessage = msg.join('\n');
+                            } else {
+                              errorMessage = msg.toString();
+                            }
+                          }
+                        }
+                        if (errorMessage.isEmpty) {
+                          errorMessage = e.toString();
+                        }
+
+                        if (errorMessage.toLowerCase().contains('email') &&
+                            (errorMessage.toLowerCase().contains('unique') ||
+                                errorMessage.toLowerCase().contains('already') ||
+                                errorMessage.toLowerCase().contains('exist'))) {
+                          errorMessage =
+                              'This account is already in use. Please enter another account.';
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(errorMessage),
+                            backgroundColor: AppTheme.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      }
                     }
                   },
                 ),
