@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/dummy_data.dart';
 import '../../../core/theme.dart';
 import '../../details/screens/product_details_screen.dart';
+import '../models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
-  final Product product;
+  final ProductModel product;
 
   const ProductCard({super.key, required this.product});
 
@@ -16,8 +16,8 @@ class ProductCard extends StatelessWidget {
           context,
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                ProductDetailsScreen(product: product),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                ProductDetailsScreen(product: product.toProduct()),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
@@ -53,6 +53,15 @@ class ProductCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade100,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 32,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
                       ),
                     ),
                   ),
