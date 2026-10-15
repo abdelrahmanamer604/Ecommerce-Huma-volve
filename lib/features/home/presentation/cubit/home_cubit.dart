@@ -11,7 +11,9 @@ class HomeCubit extends Cubit<HomeState> {
   final GetAllProductsUseCase getAllProductsUseCase;
   final GetProductsByCategoryUseCase getProductsByCategoryUseCase;
 
+  static const int _pageSize = 10;
   List<ProductEntity> _originalProducts = [];
+  String _currentSearchQuery = '';
 
   HomeCubit({
     required this.getCategoriesUseCase,
@@ -21,9 +23,11 @@ class HomeCubit extends Cubit<HomeState> {
 
   Future<void> loadHomeData() async {
     emit(HomeLoading());
+    _currentSearchQuery = '';
 
     final categoriesResult = await getCategoriesUseCase();
-    final productsResult = await getAllProductsUseCase();
+    final productsResult =
+        await getAllProductsUseCase(offset: 0, limit: _pageSize);
 
     categoriesResult.fold(
       (failure) => emit(HomeError(failure.failureMessage)),
@@ -41,6 +45,9 @@ class HomeCubit extends Cubit<HomeState> {
                 categories: allCategories,
                 products: products,
                 selectedCategoryId: 0,
+                currentOffset: 0,
+                hasMore: products.length == _pageSize,
+                isLoadingMore: false,
               ),
             );
           },
@@ -57,16 +64,22 @@ class HomeCubit extends Cubit<HomeState> {
       return;
     }
 
+    _currentSearchQuery = '';
     emit(
       currentState.copyWith(
         selectedCategoryId: categoryId,
         isProductsLoading: true,
+        currentOffset: 0,
       ),
     );
 
     final result = categoryId == 0
-        ? await getAllProductsUseCase()
-        : await getProductsByCategoryUseCase(categoryId);
+        ? await getAllProductsUseCase(offset: 0, limit: _pageSize)
+        : await getProductsByCategoryUseCase(
+            categoryId: categoryId,
+            offset: 0,
+            limit: _pageSize,
+          );
 
     result.fold(
       (failure) => emit(currentState.copyWith(isProductsLoading: false)),
@@ -77,6 +90,51 @@ class HomeCubit extends Cubit<HomeState> {
             selectedCategoryId: categoryId,
             products: products,
             isProductsLoading: false,
+            currentOffset: 0,
+            hasMore: products.length == _pageSize,
+            isLoadingMore: false,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> loadMoreProducts() async {
+    final currentState = state;
+    if (currentState is! HomeSuccess) return;
+    if (currentState.isLoadingMore ||
+        !currentState.hasMore ||
+        currentState.isProductsLoading ||
+        _currentSearchQuery.trim().isNotEmpty) {
+      return;
+    }
+
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    final nextOffset = currentState.currentOffset + _pageSize;
+
+    final result = currentState.selectedCategoryId == 0
+        ? await getAllProductsUseCase(offset: nextOffset, limit: _pageSize)
+        : await getProductsByCategoryUseCase(
+            categoryId: currentState.selectedCategoryId,
+            offset: nextOffset,
+            limit: _pageSize,
+          );
+
+    result.fold(
+      (failure) {
+        emit(currentState.copyWith(isLoadingMore: false));
+      },
+      (newProducts) {
+        final updatedProducts = List<ProductEntity>.from(currentState.products)
+          ..addAll(newProducts);
+        _originalProducts = List.from(updatedProducts);
+        emit(
+          currentState.copyWith(
+            products: updatedProducts,
+            currentOffset: nextOffset,
+            hasMore: newProducts.length == _pageSize,
+            isLoadingMore: false,
           ),
         );
       },
@@ -84,6 +142,7 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void searchProducts(String query) {
+    _currentSearchQuery = query;
     final currentState = state;
     if (currentState is! HomeSuccess) return;
 

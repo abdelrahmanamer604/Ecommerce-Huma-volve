@@ -5,6 +5,13 @@ import '../entities/product_entity.dart';
 
 abstract class HomeRepository {
   Future<Either<Failure, List<CategoryEntity>>> getCategories();
-  Future<Either<Failure, List<ProductEntity>>> getAllProducts();
-  Future<Either<Failure, List<ProductEntity>>> getProductsByCategory(int categoryId);
+  Future<Either<Failure, List<ProductEntity>>> getAllProducts({
+    int offset = 0,
+    int limit = 10,
+  });
+  Future<Either<Failure, List<ProductEntity>>> getProductsByCategory({
+    required int categoryId,
+    int offset = 0,
+    int limit = 10,
+  });
 }

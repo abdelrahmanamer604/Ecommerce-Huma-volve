@@ -22,9 +22,15 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<Either<Failure, List<ProductEntity>>> getAllProducts() async {
+  Future<Either<Failure, List<ProductEntity>>> getAllProducts({
+    int offset = 0,
+    int limit = 10,
+  }) async {
     try {
-      final result = await remoteDataSource.getAllProducts();
+      final result = await remoteDataSource.getAllProducts(
+        offset: offset,
+        limit: limit,
+      );
       return Right(result);
     } catch (error) {
       return Left(ErrorHandler.handle(error));
@@ -32,11 +38,17 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<Either<Failure, List<ProductEntity>>> getProductsByCategory(
-      int categoryId) async {
+  Future<Either<Failure, List<ProductEntity>>> getProductsByCategory({
+    required int categoryId,
+    int offset = 0,
+    int limit = 10,
+  }) async {
     try {
-      final result =
-          await remoteDataSource.getProductsByCategory(categoryId);
+      final result = await remoteDataSource.getProductsByCategory(
+        categoryId: categoryId,
+        offset: offset,
+        limit: limit,
+      );
       return Right(result);
     } catch (error) {
       return Left(ErrorHandler.handle(error));

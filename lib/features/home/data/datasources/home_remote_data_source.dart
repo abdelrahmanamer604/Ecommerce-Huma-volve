@@ -5,8 +5,15 @@ import '../models/product_model.dart';
 
 abstract class HomeRemoteDataSource {
   Future<List<CategoryModel>> getCategories();
-  Future<List<ProductModel>> getAllProducts();
-  Future<List<ProductModel>> getProductsByCategory(int categoryId);
+  Future<List<ProductModel>> getAllProducts({
+    int offset = 0,
+    int limit = 10,
+  });
+  Future<List<ProductModel>> getProductsByCategory({
+    required int categoryId,
+    int offset = 0,
+    int limit = 10,
+  });
 }
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
@@ -24,8 +31,17 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   }
 
   @override
-  Future<List<ProductModel>> getAllProducts() async {
-    final response = await apiClient.dio.get(ApiEndpoints.productsEndpoint);
+  Future<List<ProductModel>> getAllProducts({
+    int offset = 0,
+    int limit = 10,
+  }) async {
+    final response = await apiClient.dio.get(
+      ApiEndpoints.productsEndpoint,
+      queryParameters: {
+        'offset': offset,
+        'limit': limit,
+      },
+    );
     final List data = response.data as List;
     return data
         .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
@@ -33,9 +49,17 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   }
 
   @override
-  Future<List<ProductModel>> getProductsByCategory(int categoryId) async {
+  Future<List<ProductModel>> getProductsByCategory({
+    required int categoryId,
+    int offset = 0,
+    int limit = 10,
+  }) async {
     final response = await apiClient.dio.get(
       ApiEndpoints.categoryProductsEndpoint(categoryId),
+      queryParameters: {
+        'offset': offset,
+        'limit': limit,
+      },
     );
     final List data = response.data as List;
     return data

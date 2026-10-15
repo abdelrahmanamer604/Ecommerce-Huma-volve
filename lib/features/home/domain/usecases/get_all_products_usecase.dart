@@ -8,7 +8,10 @@ class GetAllProductsUseCase {
 
   GetAllProductsUseCase(this.repository);
 
-  Future<Either<Failure, List<ProductEntity>>> call() {
-    return repository.getAllProducts();
+  Future<Either<Failure, List<ProductEntity>>> call({
+    int offset = 0,
+    int limit = 10,
+  }) {
+    return repository.getAllProducts(offset: offset, limit: limit);
   }
 }

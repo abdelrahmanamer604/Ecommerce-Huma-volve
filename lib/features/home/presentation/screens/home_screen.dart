@@ -42,9 +42,28 @@ class _HomeScreenContent extends StatefulWidget {
 
 class _HomeScreenContentState extends State<_HomeScreenContent> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      if (currentScroll >= maxScroll - 200) {
+        context.read<HomeCubit>().loadMoreProducts();
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -111,6 +130,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                 },
                 color: AppTheme.primary,
                 child: CustomScrollView(
+                  controller: _scrollController,
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
@@ -236,6 +256,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                                     isSelected: isSelected,
                                     onTap: () {
                                       _searchController.clear();
+                                      if (_scrollController.hasClients) {
+                                        _scrollController.jumpTo(0);
+                                      }
                                       context
                                           .read<HomeCubit>()
                                           .selectCategory(cat.id);
@@ -285,7 +308,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                           ),
                         ),
                       )
-                    else
+                    else ...[
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         sliver: SliverGrid(
@@ -306,6 +329,23 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                           ),
                         ),
                       ),
+                      if (state.isLoadingMore)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20.0),
+                            child: Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                     const SliverToBoxAdapter(child: SizedBox(height: 24)),
                   ],
                 ),

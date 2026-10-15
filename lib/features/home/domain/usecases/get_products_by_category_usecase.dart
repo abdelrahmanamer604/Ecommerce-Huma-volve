@@ -8,7 +8,15 @@ class GetProductsByCategoryUseCase {
 
   GetProductsByCategoryUseCase(this.repository);
 
-  Future<Either<Failure, List<ProductEntity>>> call(int categoryId) {
-    return repository.getProductsByCategory(categoryId);
+  Future<Either<Failure, List<ProductEntity>>> call({
+    required int categoryId,
+    int offset = 0,
+    int limit = 10,
+  }) {
+    return repository.getProductsByCategory(
+      categoryId: categoryId,
+      offset: offset,
+      limit: limit,
+    );
   }
 }

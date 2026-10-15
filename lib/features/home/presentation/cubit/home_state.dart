@@ -12,12 +12,18 @@ class HomeSuccess extends HomeState {
   final List<ProductEntity> products;
   final int selectedCategoryId;
   final bool isProductsLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentOffset;
 
   HomeSuccess({
     required this.categories,
     required this.products,
     required this.selectedCategoryId,
     this.isProductsLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentOffset = 0,
   });
 
   HomeSuccess copyWith({
@@ -25,12 +31,18 @@ class HomeSuccess extends HomeState {
     List<ProductEntity>? products,
     int? selectedCategoryId,
     bool? isProductsLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentOffset,
   }) {
     return HomeSuccess(
       categories: categories ?? this.categories,
       products: products ?? this.products,
       selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
       isProductsLoading: isProductsLoading ?? this.isProductsLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentOffset: currentOffset ?? this.currentOffset,
     );
   }
 }
