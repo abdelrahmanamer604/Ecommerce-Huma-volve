@@ -1,28 +1,40 @@
 import 'package:flutter/material.dart';
+import '../../../../core/dummy_data.dart';
 import '../../../../core/theme.dart';
-import '../../../details/screens/product_details_screen.dart';
+import '../../../details/presentation/view/product_details_screen.dart';
 import '../../domain/entities/product_entity.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final ProductEntity product;
 
   const ProductCard({super.key, required this.product});
 
   @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+  @override
   Widget build(BuildContext context) {
+    final isFavorite = dummyFavorites.any((p) => p.id == widget.product.id.toString());
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 500),
             pageBuilder: (context, animation, secondaryAnimation) =>
-                ProductDetailsScreen(product: product.toProduct()),
+                ProductDetailsScreen(
+              productId: widget.product.id.toString(),
+              product: widget.product.toProduct(),
+            ),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
           ),
         );
+        if (mounted) setState(() {});
       },
       child: Container(
         decoration: BoxDecoration(
@@ -45,12 +57,12 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Hero(
-                    tag: 'product-${product.id}',
+                    tag: 'product-${widget.product.id}',
                     child: ClipRRect(
                       borderRadius:
                           const BorderRadius.vertical(top: Radius.circular(24)),
                       child: Image.network(
-                        product.imageUrl,
+                        widget.product.imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
@@ -69,16 +81,54 @@ class ProductCard extends StatelessWidget {
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.favorite_border,
-                        size: 18,
-                        color: AppTheme.accent,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isFavorite) {
+                            dummyFavorites.removeWhere((p) =>
+                                p.id == widget.product.id.toString());
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    '${widget.product.name} removed from favorites'),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.grey.shade800,
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          } else {
+                            dummyFavorites.add(widget.product.toProduct());
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    '${widget.product.name} added to favorites!'),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: AppTheme.accent,
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          size: 18,
+                          color: isFavorite
+                              ? AppTheme.accent
+                              : Colors.grey.shade600,
+                        ),
                       ),
                     ),
                   ),
@@ -95,7 +145,7 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      product.name,
+                      widget.product.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -109,7 +159,7 @@ class ProductCard extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            '\$${product.price.toStringAsFixed(2)}',
+                            '\$${widget.product.price.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: AppTheme.primary,
                               fontWeight: FontWeight.bold,

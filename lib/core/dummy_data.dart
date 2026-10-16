@@ -113,3 +113,5 @@ final dummyCategories = [
   'Accessories',
   'Electronics',
 ];
+
+final List<Product> dummyFavorites = [];

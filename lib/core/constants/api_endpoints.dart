@@ -8,4 +8,5 @@ class ApiEndpoints {
   static const String productsEndpoint = '/products';
   static String categoryProductsEndpoint(int categoryId) =>
       '/categories/$categoryId/products';
+  static String singleProductEndpoint(int id) => '/products/$id';
 }
